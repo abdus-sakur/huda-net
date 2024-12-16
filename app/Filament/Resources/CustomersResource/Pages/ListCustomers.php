@@ -14,6 +14,7 @@ class ListCustomers extends ListRecords
     {
         return [
             Actions\CreateAction::make()
+                ->modalDescription('Pastikan nomor telepon/wa berawalan 62 bukan 0, contoh 6281234567')
                 ->closeModalByClickingAway(false),
         ];
     }

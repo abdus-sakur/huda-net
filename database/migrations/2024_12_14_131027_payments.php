@@ -14,8 +14,7 @@ return new class extends Migration
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
             $table->integer('customer_id');
-            $table->integer('month');
-            $table->integer('year');
+            $table->string('month');
             $table->string('type');
             $table->decimal('amount', 16, 2);
             $table->string('note')->nullable();

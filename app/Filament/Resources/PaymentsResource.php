@@ -8,17 +8,22 @@ use App\Models\Payments;
 use Filament\Forms\Form;
 use App\Models\Customers;
 use Filament\Tables\Table;
+use Livewire\Attributes\Layout;
 use Filament\Resources\Resource;
 use Filament\Support\Colors\Color;
 use Illuminate\Support\HtmlString;
+use Filament\Tables\Filters\Filter;
+use Filament\Forms\Components\Select;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Enums\FiltersLayout;
+use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Resources\PaymentsResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\PaymentsResource\RelationManagers;
-use Filament\Forms\Components\Select;
-use Filament\Tables\Filters\Filter;
-use Filament\Tables\Filters\SelectFilter;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Livewire\Livewire;
 
 class PaymentsResource extends Resource
 {
@@ -33,46 +38,63 @@ class PaymentsResource extends Resource
     {
         return $form
             ->schema([
-                //
+                Select::make('customer_id')
+                    ->label('Nama Pelanggan')
+                    ->required()
+                    ->options(fn() => Customers::get()->pluck('name', 'id'))
+                    ->searchable(),
+                Select::make('type')
+                    ->label('Jenis Pembayaran')
+                    ->options([
+                        'Transfer' => 'Transfer',
+                        'Tunai' => 'Tunai/Cash',
+                    ]),
+                TextInput::make('month')
+                    ->type('month')
+                    ->label('Bulan Pembayaran'),
+                TextInput::make('amount')
+                    ->numeric()
+                    ->label('Nominal'),
+                Textarea::make('note')
             ]);
     }
 
     public static function table(Table $table): Table
     {
-        // dd(request());
         return $table
-            ->query(Customers::filterYear(date('Y')))
+            // ->query(Customers::filterYear(self::getTahunFilter()))
             ->columns([
                 TextColumn::make('name')->label('Nama Pelanggan'),
                 TextColumn::make('Januari')
-                    ->default(fn($record) => self::actionPayment($record, 1, 2024)),
+                    ->default(fn($record) => self::actionPayment($record, 1, self::getTahunFilter())),
                 TextColumn::make('Februari')
-                    ->default(fn($record) => self::actionPayment($record, 2, 2024)),
+                    ->default(fn($record) => self::actionPayment($record, 2, self::getTahunFilter())),
                 TextColumn::make('Maret')
-                    ->default(fn($record) => self::actionPayment($record, 3, 2024)),
+                    ->default(fn($record) => self::actionPayment($record, 3, self::getTahunFilter())),
                 TextColumn::make('April')
-                    ->default(fn($record) => self::actionPayment($record, 4, 2024)),
+                    ->default(fn($record) => self::actionPayment($record, 4, self::getTahunFilter())),
                 TextColumn::make('Mei')
-                    ->default(fn($record) => self::actionPayment($record, 5, 2024)),
+                    ->default(fn($record) => self::actionPayment($record, 5, self::getTahunFilter())),
                 TextColumn::make('Juni')
-                    ->default(fn($record) => self::actionPayment($record, 6, 2024)),
+                    ->default(fn($record) => self::actionPayment($record, 6, self::getTahunFilter())),
                 TextColumn::make('Juli')
-                    ->default(fn($record) => self::actionPayment($record, 7, 2024)),
+                    ->default(fn($record) => self::actionPayment($record, 7, self::getTahunFilter())),
                 TextColumn::make('Agustus')
-                    ->default(fn($record) => self::actionPayment($record, 8, 2024)),
+                    ->default(fn($record) => self::actionPayment($record, 8, self::getTahunFilter())),
                 TextColumn::make('September')
-                    ->default(fn($record) => self::actionPayment($record, 9, 2024)),
+                    ->default(fn($record) => self::actionPayment($record, 9, self::getTahunFilter())),
                 TextColumn::make('Oktober')
-                    ->default(fn($record) => self::actionPayment($record, 10, 2024)),
+                    ->default(fn($record) => self::actionPayment($record, 10, self::getTahunFilter())),
                 TextColumn::make('November')
-                    ->default(fn($record) => self::actionPayment($record, 11, 2024)),
+                    ->default(fn($record) => self::actionPayment($record, 11, self::getTahunFilter())),
                 TextColumn::make('Desember')
-                    ->default(fn($record) => self::actionPayment($record, 12, 2024)),
+                    ->default(fn($record) => self::actionPayment($record, 12, self::getTahunFilter())),
             ])
             ->filters([
                 SelectFilter::make('tahun')
-                    ->relationship('payment', 'year')
-                    ->default(1)
+                    ->label('Tahun')
+                    // ->relationship('payment', 'year')
+                    // ->default(2024)
                     ->options([
                         '2015' => 2015,
                         '2016' => 2016,
@@ -91,15 +113,18 @@ class PaymentsResource extends Resource
                         '2029' => 2029,
                         '2030' => 2030,
                     ])
-            ])
+                    ->query(fn($query, $data) => $query)
+            ], layout: FiltersLayout::AboveContent)
             ->actions([
                 // Tables\Actions\EditAction::make(),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
             ]);
+    }
+
+    protected static function getTahunFilter()
+    {
+        $livewire = Livewire::current();
+        // return request()->query('tableFilters')['tahun']['value'] ?? '2024';
+        return $livewire->tableFilters['tahun']['value'] ?? '2024';
     }
 
     public static function getRelations(): array
@@ -126,6 +151,23 @@ class PaymentsResource extends Resource
 
     public static function actionPayment($record, $month, $year)
     {
+        $db_month = 1;
+        $db_year = 9999;
+        if (isset($record->payment[0]->month) && $record->payment[0]->month) {
+            $date = explode('-', $record->payment[0]->month);
+            $db_year = $date[0];
+            $db_month = intval($date[1]);
+        }
+        if (isset($record->payment)) {
+            foreach ($record->payment as $payment):
+                $date = explode('-', $payment->month);
+                $db_year = $date[0];
+                $db_month = intval($date[1]);
+                if ($db_month == $month && $db_year == $year) {
+                    return new HtmlString("<span style='padding:5px 10px;background-color:lightskyblue;border-radius:15px;font-size:11px;'>LUNAS</span>");
+                }
+            endforeach;
+        }
         switch ($month) {
             case 1:
                 $month_name = 'Januari';
@@ -164,7 +206,8 @@ class PaymentsResource extends Resource
                 $month_name = 'Desember';
                 break;
         }
-        if (isset($record->payment[0]->month) && $record->payment[0]->month == $month) {
+        // dd($record);
+        if ($db_month == $month && $db_year == $year) {
             return new HtmlString("<span style='padding:5px 10px;background-color:lightskyblue;border-radius:15px;font-size:11px;'>LUNAS</span>");
         }
         return self::send_wa($record, $month_name, $year);

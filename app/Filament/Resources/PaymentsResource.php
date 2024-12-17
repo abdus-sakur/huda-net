@@ -45,14 +45,17 @@ class PaymentsResource extends Resource
                     ->searchable(),
                 Select::make('type')
                     ->label('Jenis Pembayaran')
+                    ->required()
                     ->options([
                         'Transfer' => 'Transfer',
                         'Tunai' => 'Tunai/Cash',
                     ]),
                 TextInput::make('month')
+                    ->required()
                     ->type('month')
                     ->label('Bulan Pembayaran'),
                 TextInput::make('amount')
+                    ->required()
                     ->numeric()
                     ->label('Nominal'),
                 Textarea::make('note')

@@ -15,16 +15,16 @@ class ListPayments extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make()
-                ->label('Input Pembayaran')
-                ->action(function (array $data, $record) {
-                    Payments::create($data);
+            // Actions\CreateAction::make()
+            //     ->label('Input Pembayaran')
+            //     ->action(function (array $data, $record) {
+            //         Payments::create($data);
 
-                    Notification::make()
-                        ->title('Simpan pembayaran')
-                        ->success()
-                        ->send();
-                }),
+            //         Notification::make()
+            //             ->title('Simpan pembayaran')
+            //             ->success()
+            //             ->send();
+            //     }),
         ];
     }
 }

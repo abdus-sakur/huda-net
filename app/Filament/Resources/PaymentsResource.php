@@ -135,18 +135,6 @@ class PaymentsResource extends Resource
                     ])
                     ->query(fn($query, $data) => $query)
             ], layout: FiltersLayout::AboveContent);
-        // ->actions([
-        //     Action::make('view')
-        //         ->label('View Details')
-        //         ->modalContent(function ($record) {
-        //             return view('components.modal', [
-        //                 'record' => $record
-        //             ]);
-        //         })
-        //         ->modalSubmitAction(false) // Removes the submit button
-        //         ->modalCancelAction(false) // Optional: removes the cancel button
-        //         ->modalWidth('md')
-        // ]);
     }
 
     protected static function getTahunFilter()
@@ -174,7 +162,7 @@ class PaymentsResource extends Resource
 
         $href = "https://api.whatsapp.com/send/?phone=$record->phone&text=Salam+Bapak%2FIbu%0A%0AKami+informasikan+Invoice+Internet+anda+telah+terbit+dan+dapat+di+bayarkan%2C+berikut+rinciannya+%3A%0A%0ANama+Pelanggan+%3A+{$record->name}%0ATagihan+Bulan+%3A+{$month_name}%0APaket%3A+Internet+{$record->bandwidth}%0ATotal+Tagihan+%3A+{$record->price}%0AJatuh+Tempo+%3A+25+{$month_name}+{$year}%0A%0ABisa+membayar+dengan+transfer+ke+admin+kami+di%0ABank+Mandiri+a%2Fn+Miftakhul+Huda%0A%0ATerimakasih.&type=custom_url&app_absent=0";
         return new HtmlString("<a href='$href' target='_blank' style='padding:5px 10px;background-color:darkseagreen;border-radius:15px;font-size:11px;'>WA</a><br>
-        <button wire:click=\"mountTableAction('payment{$month}', '1')\" wire:loading.attr=\"disabled\" wire:target=\"mountTableAction('payment{$month}', '1')\" style='padding:2px 10px;background-color:orange;border-radius:15px;font-size:11px;margin-top:3px;'>Bayar</button>");
+        <button wire:click=\"mountTableAction('payment{$month}', $record->id)\" wire:loading.attr=\"disabled\" wire:target=\"mountTableAction('payment{$month}', $record->id)\" style='padding:2px 10px;background-color:orange;border-radius:15px;font-size:11px;margin-top:3px;'>Bayar</button>");
     }
 
     public static function infoPayment($record, $month, $year)
@@ -211,6 +199,7 @@ class PaymentsResource extends Resource
         $month_name = Carbon::create(null, $month)->translatedFormat('F');
         return Action::make('payment' . $month)
             ->label("Form Pembayaran $month_name")
+            ->modalDescription(fn($record) => $record->name)
             ->visible(true)
             ->hiddenLabel(false)
             ->modalWidth('sm')

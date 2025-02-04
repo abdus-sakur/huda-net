@@ -14,7 +14,7 @@ services:
         # cpus: 0.5
     db:
         image: mariadb:latest
-        container_name: mariadb_latest
+        # container_name: mariadb_latest
         restart: unless-stopped
         depends_on:
             - php

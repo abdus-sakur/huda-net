@@ -8,6 +8,8 @@ services:
             dockerfile: Dockerfile
         # volumes:
         #     - ./:/var/www/html:cached
+        depends_on:
+            - db
         networks:
             - laravel-network
         # mem_limit: 0.5G
@@ -16,9 +18,6 @@ services:
         image: mariadb:latest
         # container_name: mariadb_latest
         restart: unless-stopped
-        depends_on:
-            - php
-            - nginx
         environment:
             MARIADB_ROOT_HOST: maria_db
             MARIADB_ROOT_PASSWORD: root

@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             $table->integer('customer_id');
             $table->string('month');
+            $table->string('year');
             $table->string('type');
-            $table->decimal('amount', 16, 2);
             $table->string('note')->nullable();
             $table->timestamps();
         });

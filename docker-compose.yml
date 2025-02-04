@@ -2,7 +2,7 @@ name: huda-net
 services:
     php:
         restart: unless-stopped
-        image: php:8.3-fpm-alpine
+        image: php:8.3-fpm-alpine3.20
         build:
             context: .
             dockerfile: Dockerfile
@@ -12,6 +12,23 @@ services:
             - laravel-network
         mem_limit: 0.5G
         cpus: 0.5
+    # db:
+    #     image: mariadb:latest
+    #     container_name: mariadb_latest
+    #     restart: unless-stopped
+    #     depends_on:
+    #         - php
+    #         - nginx
+    #     environment:
+    #         MARIADB_ROOT_HOST: maria_db
+    #         MARIADB_ROOT_PASSWORD: root
+    #         MARIADB_DATABASE: huda_net
+    #         MARIADB_USER: user
+    #         MARIADB_PASSWORD: 1234
+    #     ports:
+    #         - "3307:3306"
+    #     volumes:
+    #         - ./mariadb_data:/var/lib/mysql
 
     nginx:
         image: nginx:alpine
@@ -29,10 +46,10 @@ services:
         deploy:
             resources:
                 limits:
-                    cpus: "0.50"
-                    memory: 512M
+                    cpus: 1
+                    memory: 1G
                 reservations:
-                    cpus: "0.25"
+                    cpus: 0.25
                     memory: 256M
 networks:
     laravel-network:

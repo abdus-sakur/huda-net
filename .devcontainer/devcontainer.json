@@ -1,6 +1,19 @@
 {
-  "name": "Laravel Development",
-  "dockerComposeFile": "docker-compose.yml",
-  "service": "php",
-  "workspaceFolder": "/var/www/html"
+  "name": "Laravel Dev Container",
+  "dockerComposeFile": "../docker-compose.yml", // Path ke docker-compose.yml
+  "service": "php", // Service yang akan digunakan (sesuaikan dengan nama service di docker-compose.yml)
+  "workspaceFolder": "/var/www/html", // Direktori kerja di dalam container
+  "shutdownAction": "stopCompose", // Menghentikan container saat VS Code ditutup
+  "forwardPorts": [8000], // Port yang akan di-forward ke host
+//   "postCreateCommand": "composer install && npm install", // Perintah yang dijalankan setelah container dibuat
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "bmewburn.vscode-intelephense-client", // Extensi PHP
+        "esbenp.prettier-vscode", // Extensi Prettier
+        "dbaeumer.vscode-eslint", // Extensi ESLint
+        "ms-azuretools.vscode-docker" // Extensi Docker
+      ]
+    }
+  }
 }

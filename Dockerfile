@@ -28,7 +28,9 @@ WORKDIR /var/www/html
 COPY . .
 
 # RUN composer dump-autoload --optimize
-# RUN composer install --no-interaction --no-plugins --no-scripts
+RUN composer install --no-interaction --no-plugins --no-scripts
+
+RUN php artisan filament:optimize
 
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 

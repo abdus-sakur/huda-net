@@ -24,6 +24,8 @@ services:
             MARIADB_DATABASE: huda_net
             MARIADB_USER: user
             MARIADB_PASSWORD: 1234
+        networks:
+            - laravel-network
         # ports:
         #     - "3307:3306"
         # volumes:

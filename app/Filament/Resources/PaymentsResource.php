@@ -35,36 +35,14 @@ class PaymentsResource extends Resource
     public static function form(Form $form): Form
     {
         return $form
-            ->schema([
-                // Select::make('customer_id')
-                //     ->label('Nama Pelanggan')
-                //     ->required()
-                //     ->options(fn() => Customers::get()->pluck('name', 'id'))
-                //     ->searchable(),
-                // Select::make('type')
-                //     ->label('Jenis Pembayaran')
-                //     ->required()
-                //     ->options([
-                //         'Transfer' => 'Transfer',
-                //         'Tunai' => 'Tunai/Cash',
-                //     ]),
-                // TextInput::make('month')
-                //     ->required()
-                //     ->type('month')
-                //     ->label('Bulan Pembayaran'),
-                // TextInput::make('amount')
-                //     ->required()
-                //     ->numeric()
-                //     ->label('Nominal'),
-                // Textarea::make('note')
-            ]);
+            ->schema([]);
     }
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
-                TextColumn::make('name')->label('Nama Pelanggan'),
+                TextColumn::make('name')->label('Nama Pelanggan')->searchable(),
                 TextColumn::make('Januari')
                     // ->html()
                     ->action(self::actionPayment(1, self::getTahunFilter()))

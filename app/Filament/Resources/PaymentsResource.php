@@ -118,7 +118,7 @@ class PaymentsResource extends Resource
     protected static function getTahunFilter()
     {
         $livewire = Livewire::current();
-        return $livewire->tableFilters['tahun']['value'] ?? '2024';
+        return $livewire->tableFilters['tahun']['value'] ?? date('Y');
     }
 
     public static function getRelations(): array

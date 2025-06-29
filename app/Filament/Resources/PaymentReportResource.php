@@ -2,25 +2,26 @@
 
 namespace App\Filament\Resources;
 
+use Carbon\Carbon;
 use Filament\Tables;
 use Livewire\Livewire;
 use App\Models\Payments;
-use Filament\Forms\Form;
-use App\Models\Customers;
 use Filament\Tables\Table;
+use App\Models\ReportPayments;
 use Filament\Resources\Resource;
-use Illuminate\Support\Facades\DB;
-use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Actions\Action;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Notifications\Notification;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\SelectFilter;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\PaymentReportResource\Pages;
-use App\Filament\Resources\PaymentReportResource\RelationManagers;
+use App\Models\Customers;
 
 class PaymentReportResource extends Resource
 {
-    protected static ?string $model = Payments::class;
+    protected static ?string $model = ReportPayments::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
     protected static ?string $navigationGroup = 'Menu';
@@ -28,120 +29,103 @@ class PaymentReportResource extends Resource
     protected static ?string $label = 'Report Pembayaran';
     protected static ?int $navigationSort = 99;
 
+    public $selectedYear;
+
+    public function mount(): void
+    {
+        $this->selectedYear = request()->get('year', date('Y'));
+    }
+
     public static function table(Table $table): Table
     {
+        // $tahun = static::getTahunFilter();
+        // $query = ReportPayments::getPaymentSummary($tahun);
         return $table
+            ->query(function () {
+                $tahun = static::getTahunFilter();
+
+                // Jalankan generate summary jika diperlukan
+                ReportPayments::getPaymentSummary($tahun);
+                // dd($tahun);
+                // Ambil data dari tabel hasil summary
+                return ReportPayments::query();
+            })
             ->columns([
-                TextColumn::make('month'),
-                TextColumn::make('year'),
-                TextColumn::make('total_customers')
-                    ->label('Total Pelanggan')
-                    ->sortable()
-                    ->searchable(),
-                TextColumn::make('paid_customers')
-                    ->label('Pelanggan Bayar')
-                    ->sortable()
-                    ->searchable(),
-                TextColumn::make('unpaid_customers')
-                    ->label('Pelanggan Belum Bayar')
+                Tables\Columns\TextColumn::make('month')
+                    ->label('Bulan')
+                    ->formatStateUsing(function ($state) {
+                        $months = [
+                            1 => 'Januari',
+                            2 => 'Februari',
+                            3 => 'Maret',
+                            4 => 'April',
+                            5 => 'Mei',
+                            6 => 'Juni',
+                            7 => 'Juli',
+                            8 => 'Agustus',
+                            9 => 'September',
+                            10 => 'Oktober',
+                            11 => 'November',
+                            12 => 'Desember'
+                        ];
+                        return $months[$state] ?? $state;
+                    })
                     ->sortable(),
-                TextColumn::make('total_paid')
-                    ->label('Total Bayar')
-                    ->sortable()
-                    ->searchable()
-                    ->money('idr'),
-                TextColumn::make('total_unpaid')
-                    ->label('Total Belum Bayar')
-                    ->sortable()
-                    ->searchable()
-                    ->money('idr')
+
+                Tables\Columns\TextColumn::make('year')
+                    ->label('Tahun')
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('total_customers')
+                    ->label('Total Pelanggan')
+                    ->numeric()
+                    ->alignCenter(),
+
+                Tables\Columns\TextColumn::make('paid_customers')
+                    ->label('Pelanggan Bayar')
+                    ->action(self::actionDetail('paid'))
+                    ->numeric()
+                    ->alignCenter()
+                    ->color('success'),
+
+                Tables\Columns\TextColumn::make('unpaid_customers')
+                    ->label('Pelanggan Belum Bayar')
+                    ->action(self::actionDetail('unpaid'))
+                    ->numeric()
+                    ->alignCenter()
+                    ->color('danger'),
+
+                Tables\Columns\TextColumn::make('total_paid')
+                    ->label('Total Dibayar')
+                    ->money('IDR')
+                    ->alignEnd()
+                    ->color('success'),
+
+                Tables\Columns\TextColumn::make('total_unpaid')
+                    ->label('Total Belum Dibayar')
+                    ->money('IDR')
+                    ->alignEnd()
+                    ->color('danger'),
             ])->filters([
                 SelectFilter::make('tahun')
                     ->label('Tahun')
-                    // ->relationship('payment', 'year')
-                    // ->default(2024)
-                    ->options([
-                        '2021' => 2021,
-                        '2022' => 2022,
-                        '2023' => 2023,
-                        '2024' => 2024,
-                        '2025' => 2025,
-                        '2026' => 2026,
-                        '2027' => 2027,
-                        '2028' => 2028,
-                        '2029' => 2029,
-                        '2030' => 2030,
-                    ])
-                    ->query(fn($query, $data) => $query)
+                    ->options(function () {
+                        $years = [];
+                        $currentYear = date('Y');
+                        for ($year = 2022; $year <= $currentYear; $year++) {
+                            $years[$year] = (string) $year;
+                        }
+                        return $years;
+                    })
+                    ->query(fn($query, $data) => $query),
             ], layout: FiltersLayout::AboveContent)
-            ->actions([
-                // Tables\Actions\EditAction::make(),
-            ])
-            ->bulkActions([
-                // Tables\Actions\BulkActionGroup::make([
-                //     Tables\Actions\DeleteBulkAction::make(),
-                // ]),
-            ])
-            ->filters([
-                "WITH RECURSIVE months AS (
-  SELECT 1 AS month, '2024' AS year
-  UNION ALL
-  SELECT month + 1, '2024' FROM months WHERE month < 12
-),
-customer_months AS (
-  SELECT 
-    c.id AS customer_id,
-    c.price,
-    m.month,
-    m.year,
-    c.subscribe
-  FROM customers c
-  CROSS JOIN months m
-  WHERE c.subscribe <= CONCAT(m.year, '-', LPAD(m.month, 2, '0')) 
-),
-payments_check AS (
-  SELECT
-    cm.customer_id,
-    cm.month,
-    cm.year,
-    CAST(cm.price AS DECIMAL(12, 2)) AS price,
-    CASE 
-      WHEN p.id IS NULL THEN 0 ELSE 1
-    END AS has_paid
-  FROM customer_months cm
-  LEFT JOIN payments p
-    ON p.customer_id = cm.customer_id
-    AND p.month = cm.month
-    AND p.year = cm.year
-)
-SELECT 
-  month,
-  year,
-  COUNT(*) AS total_customers,
-  SUM(has_paid) AS paid_customers,
-  COUNT(*) - SUM(has_paid) AS unpaid_customers,
-  SUM(CASE WHEN has_paid = 1 THEN price ELSE 0 END) AS total_paid,
-  SUM(CASE WHEN has_paid = 0 THEN price ELSE 0 END) AS total_unpaid
-FROM payments_check
-GROUP BY year, month
-ORDER BY year, month;
-"
-            ])
-            ->paginated(false)
-            ->recordAction(null);
+            ->paginated(false);
     }
 
     protected static function getTahunFilter()
     {
         $livewire = Livewire::current();
         return $livewire->tableFilters['tahun']['value'] ?? date('Y');
-    }
-
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
     }
 
     public static function getPages(): array
@@ -151,5 +135,42 @@ ORDER BY year, month;
             // 'create' => Pages\CreatePaymentReport::route('/create'),
             // 'edit' => Pages\EditPaymentReport::route('/{record}/edit'),
         ];
+    }
+
+    public static function actionDetail($type)
+    {
+        return Action::make('payment' . $type)
+            ->label("Pelanggan belum bayar")
+            ->visible(true)
+            ->hiddenLabel(false)
+            ->modalWidth('2xl')
+            ->modalContent(function ($record) use ($type) {
+                $month = $record->month;
+                $month_name = Carbon::create(null, $month)->translatedFormat('F');
+                $year = static::getTahunFilter();
+                $month_year = strlen($month) == 1 ? $year . '-0' . $month : $year . '-' . $month;
+                $data = Customers::select('customers.*')
+                    ->leftJoin('payments', function ($join) use ($month, $year) {
+                        $join->on('payments.customer_id', '=', 'customers.id')
+                            ->where('payments.month', $month)
+                            ->where('payments.year', $year);
+                    })
+                    ->where('customers.subscribe', '<=', $month_year);
+                if ($type === 'paid') {
+                    $data = $data->whereNotNull('payments.id');
+                } else {
+                    $data = $data->whereNull('payments.id');
+                }
+                $data = $data->get();
+                return view('components.modal-report-payment', [
+                    'customers' => $data,
+                    'month_name' => $month_name,
+                    'year' => $year,
+                    'type' => $type,
+
+                ]);
+            })
+            ->modalSubmitAction(false)
+            ->closeModalByClickingAway(false);
     }
 }

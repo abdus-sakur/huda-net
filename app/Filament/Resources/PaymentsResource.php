@@ -21,6 +21,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Support\View\Components\Modal;
 use App\Filament\Resources\PaymentsResource\Pages;
 use App\Models\Payments;
+use Faker\Provider\ar_EG\Payment;
 use Filament\Forms\Components\Hidden;
 
 class PaymentsResource extends Resource
@@ -148,7 +149,8 @@ class PaymentsResource extends Resource
         if (isset($record->payment)) {
             foreach ($record->payment as $payment):
                 if ($payment->month == $month && $payment->year == $year) {
-                    return new HtmlString("<span style='padding:5px 10px;background-color:lightskyblue;border-radius:15px;font-size:11px;' disabled>LUNAS</span>");
+                    $href = route('invoice.index', ['id' => $record->id, 'month' => $month, 'year' => $year]);
+                    return new HtmlString("<a href='{$href}' target='_blank' style='padding:5px 10px;background-color:lightskyblue;border-radius:15px;font-size:11px;'>Invoice</a>");
                 }
             endforeach;
         }
@@ -201,6 +203,7 @@ class PaymentsResource extends Resource
                     'month' => $data['month'],
                     'year' => $data['year'],
                     'note' => $data['note'],
+                    'invoice' => self::generateInvoiceNumber(),
                 ]);
                 Notification::make()
                     ->title("Simpan Data Pembayaran")
@@ -210,5 +213,20 @@ class PaymentsResource extends Resource
             ->closeModalByClickingAway(false)
             ->modalFooterActionsAlignment('right')
             ->modalSubmitActionLabel('Simpan');
+    }
+
+    public static function generateInvoiceNumber(): string
+    {
+        $prefix = 'INV-';
+        $now = Carbon::now();
+
+        $yearMonth = $now->format('Ym');
+        $lastInvoice = Payments::whereYear('created_at', $now->year)
+            ->whereMonth('created_at', $now->month)
+            ->count();
+
+        $sequence = str_pad($lastInvoice + 1, 3, '0', STR_PAD_LEFT);
+
+        return $prefix . $yearMonth . $sequence;
     }
 }

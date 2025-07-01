@@ -56,18 +56,23 @@
 
 <body style="position: relative;">
     <div class="invoice-box">
-        <div style="
-        position: absolute;
-        top: 40%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 60px;
-        color: rgba(43, 145, 185, 0.2);
-        font-weight: bold;
-        z-index: 1;
-        pointer-events: none;
-        user-select: none;">
-            LUNAS
+        @if ($service['type'])
+            <div style="
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                font-size: 60px;
+                color: rgba(43, 145, 185, 0.2);
+                font-weight: bold;
+                z-index: 1;
+                pointer-events: none;
+                user-select: none;">
+                LUNAS
+            </div>
+        @endif
+        <div style="text-align: center; margin-bottom: 20px;">
+            <img src="{{ public_path('img/adau.jpg') }}" alt="" height="75px">
         </div>
         <div style="display: flex; justify-content: space-between;">
             <div>
@@ -123,7 +128,13 @@
 
         <div style="margin-top: 30px;">
             <strong>Metode Pembayaran:</strong><br>
-            {{ $service['type'] }}<br>
+            @if ($service['type'])
+                {{ $service['type'] }}<br>
+            @else
+                @foreach ($company['bank'] as $bank)
+                    {{ $bank['name'] }} - {{ $bank['account_number'] }} (a.n. {{ $bank['account_name'] }})<br>
+                @endforeach
+            @endif
         </div>
 
         <div style="margin-top: 40px; font-size: 12px; color: #777;">

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
 
@@ -9,33 +10,38 @@ class InvoiceController extends Controller
 {
     public function index($id, $year, $month)
     {
-        $payment = DB::table('payments')
-            ->join('customers', 'payments.customer_id', '=', 'customers.id')
-            ->where('customer_id', $id)
-            ->where('year', $year)
-            ->where('month', $month)
+        $data = DB::table('customers')
+            ->select('*', 'customers.id as customer_id')
+            ->leftJoin('payments', function ($join) use ($year, $month) {
+                $join->on('customers.id', '=', 'payments.customer_id')
+                    ->where('payments.year', $year)
+                    ->where('payments.month', $month);
+            })
+            ->where('customers.id', $id)
             ->first();
-        $invoiceNumber = $this->generateInvoiceNumber();
-        $invoiceDate = $payment->created_at ?? now()->format('Y-m-d');
+        $invoiceNumber = $this->generateInvoiceNumber($month, $year, $data->customer_id);
+        $invoiceDate = $data->created_at ?? now()->format('Y-m-d');
         $company = [
             'name' => 'Huda Net',
             'address' => 'Jl. Merdeka No. 99, Kendal',
             'phone' => '0812-3456-7890',
             'email' => 'admin@hudanet.com',
+            'bank' => [
+                ['name' => 'Bank Mandiri', 'account_name' => 'Rina Lailatul Mukarromah', 'account_number' => '1350006472557'],
+            ]
         ];
 
         $customer = [
-            'name' => $payment->name ?? '',
-            'address' => ($payment->sub_district ?? '') . ', ' . ($payment->urban_village ?? ''),
-            'phone' => $payment->phone ?? '',
-            'bandwidth' => $payment->bandwidth ?? '',
+            'name' => $data->name ?? '',
+            'address' => ($data->sub_district ?? '') . ', ' . ($data->urban_village ?? ''),
+            'phone' => $data->phone ?? '',
+            'bandwidth' => $data->bandwidth ?? '',
         ];
-
         $service = [
-            'speed' => $payment->bandwidth ?? '',
-            'type' => $payment->type ?? '',
+            'speed' => $data->bandwidth ?? '',
+            'type' => $data->type ?? '',
             'period' => "{$year}-{$month}-01",
-            'price' => $payment->price ?? 0,
+            'price' => $data->price ?? 0,
             'other_fees' => [
                 ['label' => 'Biaya Administrasi', 'amount' => 0],
             ],
@@ -46,12 +52,34 @@ class InvoiceController extends Controller
         return Pdf::loadView('components.invoice', compact('invoiceNumber', 'invoiceDate', 'company', 'customer', 'service', 'total'))->stream('invoice.pdf');
     }
 
-    function generateInvoiceNumber(): string
-    {
-        $prefix = 'INV-';
-        $date = now()->format('Ym'); // contoh: 20250627
-        $random = random_int(1000, 9999);
 
-        return $prefix . $date .  $random;
+    public static function generateInvoiceNumber($month, $year, $id): string
+    {
+        $check = DB::table('invoices')
+            ->where('year', $year)
+            ->where('month', $month)
+            ->where('customer_id', $id)
+            ->first();
+        if ($check) {
+            return $check->invoice_number;
+        }
+        $prefix = 'INV-';
+        $now = Carbon::now();
+
+        $yearMonth = $now->format('Ym');
+        $lastInvoice = DB::table('invoices')
+            ->whereYear('created_at', $now->year)
+            ->whereMonth('created_at', $now->month)
+            ->count();
+
+        $sequence = str_pad($lastInvoice + 1, 3, '0', STR_PAD_LEFT);
+        DB::table('invoices')->insert([
+            'invoice_number' => $prefix . $yearMonth . $sequence,
+            'year' => $year,
+            'month' => $month,
+            'customer_id' => $id,
+            'created_at' => now(),
+        ]);
+        return $prefix . $yearMonth . $sequence;
     }
 }

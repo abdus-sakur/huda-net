@@ -138,10 +138,11 @@ class PaymentsResource extends Resource
 
     public static function send_wa($record, $month_name, $year, $month)
     {
-
+        $Invoice = route('invoice.index', ['id' => $record->id, 'month' => $month, 'year' => $year]);
         $href = "https://api.whatsapp.com/send/?phone=$record->phone&text=Salam+Bapak%2FIbu%0A%0AKami+informasikan+Invoice+Internet+anda+telah+terbit+dan+dapat+di+bayarkan%2C+berikut+rinciannya+%3A%0A%0ANama+Pelanggan+%3A+{$record->name}%0ATagihan+Bulan+%3A+{$month_name}%0APaket%3A+Internet+{$record->bandwidth}%0ATotal+Tagihan+%3A+{$record->price}%0AJatuh+Tempo+%3A+25+{$month_name}+{$year}%0A%0ABisa+membayar+dengan+transfer+ke+admin+kami+di%0ABank+Mandiri+a%2Fn+Miftakhul+Huda%0A%0ATerimakasih.&type=custom_url&app_absent=0";
         return new HtmlString("<a href='$href' target='_blank' style='padding:5px 10px;background-color:darkseagreen;border-radius:15px;font-size:11px;'>WA</a><br>
-        <button wire:click=\"mountTableAction('payment{$month}', $record->id)\" wire:loading.attr=\"disabled\" wire:target=\"mountTableAction('payment{$month}', $record->id)\" style='padding:2px 10px;background-color:orange;border-radius:15px;font-size:11px;margin-top:3px;'>Bayar</button>");
+        <button wire:click=\"mountTableAction('payment{$month}', $record->id)\" wire:loading.attr=\"disabled\" wire:target=\"mountTableAction('payment{$month}', $record->id)\" style='padding:2px 10px;background-color:orange;border-radius:15px;font-size:11px;margin-top:3px;'>Bayar</button><br>
+        <a href='{$Invoice}' target='_blank' style='padding:5px 10px;background-color:lightskyblue;border-radius:15px;font-size:11px;'>Invoice</a>");
     }
 
     public static function infoPayment($record, $month, $year)
@@ -150,7 +151,7 @@ class PaymentsResource extends Resource
             foreach ($record->payment as $payment):
                 if ($payment->month == $month && $payment->year == $year) {
                     $href = route('invoice.index', ['id' => $record->id, 'month' => $month, 'year' => $year]);
-                    return new HtmlString("<a href='{$href}' target='_blank' style='padding:5px 10px;background-color:lightskyblue;border-radius:15px;font-size:11px;'>Invoice</a>");
+                    return new HtmlString("<a href='{$href}' target='_blank' style='padding:5px 10px;background-color:lightskyblue;border-radius:15px;font-size:11px;'>Lunas</a>");
                 }
             endforeach;
         }
@@ -203,7 +204,6 @@ class PaymentsResource extends Resource
                     'month' => $data['month'],
                     'year' => $data['year'],
                     'note' => $data['note'],
-                    'invoice' => self::generateInvoiceNumber(),
                 ]);
                 Notification::make()
                     ->title("Simpan Data Pembayaran")
